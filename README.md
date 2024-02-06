@@ -1,4 +1,4 @@
-# AWSS3-salesforce
+# AWS S3 - Salesforce
 
 1. Creacion FileStore Object y sus fields
 2. Creacion Named Credentials con Salesforce Classic
