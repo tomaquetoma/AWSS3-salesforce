@@ -75,7 +75,7 @@ public class AWSFileService {
             System.debug('filename ' + file.name);
 
             HttpRequest req = new HttpRequest();
-            req.setEndpoint('callout:AWS_Sign_4/'+file.Name);
+            req.setEndpoint('callout:AWS_Lyon/'+file.Name);
             req.setMethod('GET');
             req.setHeader('Content-Type', contentType);
 
