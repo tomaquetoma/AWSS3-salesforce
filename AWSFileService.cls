@@ -61,9 +61,9 @@ public class AWSFileService {
     @AuraEnabled(cacheable=true)
     public static FileData getDocumentUsingFileId(string recordId)
     {
-        List<FileStore__c> files=[SELECT Id, S3ServerUrl__c,FileExtension__c,Name FROM FileStore__c 
+        List<Legacy_Document__c> files=[SELECT Id, S3ServerUrl__c,FileExtension__c,Name FROM Legacy_Document__c 
                                   where Id=:recordId];
-        FileStore__c file=files[0];
+        Legacy_Document__c file=files[0];
 
         System.debug('recordId '+ recordId);
 
