@@ -86,7 +86,7 @@ public class AWSFileService {
                 FileData data = new FileData();
                 data.Content = EncodingUtil.Base64Encode(res.getBodyAsBlob());
                 data.ContentType = ContentType(file.FileExtension__c);
-                data.FileName = file.Document_Revision__c;
+                data.FileName = file.Name;
                 system.debug('data ' + data);
 
                 return data;
