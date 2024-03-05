@@ -8,6 +8,18 @@
 
 public class AWSFileService {
 
+    
+    public class FileDataMethod {
+        @AuraEnabled
+        public string Content{get;set;}
+        @AuraEnabled
+        public blob ContentBlob{get;set;}
+        @AuraEnabled
+        public string ContentType{get;set;}
+        @AuraEnabled
+        public string FileName{get;set;}
+    }
+
     public static string ContentType(string fileType) {
         switch on fileType.toLowerCase() {
             when 'docx'
@@ -54,7 +66,7 @@ public class AWSFileService {
     }
     
     @AuraEnabled(cacheable=true)
-    public static FileData getDocumentUsingFileId(string recordId) {
+    public static FileDataMethod getDocumentUsingFileId(string recordId) {
 
         List<Legacy_Document__c> files = [SELECT Id, Name, Document_Revision__c, FileExtension__c FROM Legacy_Document__c WHERE Id = :recordId];
 
@@ -81,15 +93,33 @@ public class AWSFileService {
             Http http = new Http();
             HTTPResponse res = http.send(req);
             
-            system.debug(res.getBody());
-            system.debug(res.getStatusCode());
+            // system.debug(res.getBody());
+            system.debug('status code ' + res.getStatusCode());
+
+            System.debug('Encoding ' + EncodingUtil.Base64Encode(res.getBodyAsBlob()));
+
+            System.debug('NO Encoding ' + res.getBody());
+            
+            Integer fileSizeBytes = Integer.valueOf(res.getHeader('Content-Length'));
+            // Convertir tamaño de bytes a megabytes
+            Double fileSizeMB = fileSizeBytes / (1024.0 * 1024.0);
+            System.debug('content size ' + fileSizeMB);
 
             if (res.getStatusCode() == 200 || res.getStatusCode()==201) {
-                FileData data = new FileData();
+                FileDataMethod data = new FileDataMethod();
                 data.Content = EncodingUtil.Base64Encode(res.getBodyAsBlob());
+
+                //data.ContentBlob = res.getBodyAsBlob();
+
                 data.ContentType = ContentType(file.FileExtension__c);
                 data.FileName = file.Name;
+
                 system.debug('data ' + data);
+
+
+                // String Content = EncodingUtil.Base64Encode(res.getBodyAsBlob());
+                // String ContentType = ContentType(file.FileExtension__c);
+                // String FileName = file.Name; 
 
                 return data;
             }
@@ -101,81 +131,44 @@ public class AWSFileService {
         return null;
     }
 
-
-    // @future(callout=true)
-    // public static void uploadToOpportunityAttachment(String legacyDocumentId) {
-    //     Legacy_Document__c legacyDocument = [SELECT Id, Name, Document_Revision__c, FileExtension__c, Opportunity__c FROM Legacy_Document__c WHERE Id = :legacyDocumentId];
+    @future(callout=true)
+    public static void uploadToOpportunityContentDocument(String legacyDocumentId) {
         
-    //     if (legacyDocument != null && legacyDocument.Opportunity__c != null) {
-    //         String contentType = ContentType(legacyDocument.FileExtension__c);
-            
-    //         HttpRequest req = new HttpRequest();
-    //         req.setEndpoint('callout:AWS_Lyon/' + legacyDocument.Document_Revision__c);
-    //         req.setMethod('GET');
-    //         req.setHeader('Content-Type', contentType);
-            
-    //         Http http = new Http();
-    //         HttpResponse res = http.send(req);
-            
-    //         if (res.getStatusCode() == 200 || res.getStatusCode() == 201) {
-    //             Attachment attachment = new Attachment();
-    //             attachment.Name = legacyDocument.Name;
-    //             attachment.Body = res.getBodyAsBlob();
-    //             attachment.ContentType = contentType;
-    //             attachment.ParentId = legacyDocument.Opportunity__c;
-                
-    //             insert attachment;
-    //         }
-    //     }
-    // }
+        Legacy_Document__c legacyDocument = [SELECT Id, Name, Document_Revision__c, FileExtension__c, Opportunity__c FROM Legacy_Document__c WHERE Id = :legacyDocumentId];
 
-    // @future(callout=true)
-    // public static void uploadToOpportunityContentDocument(String legacyDocumentId) {
+        if (legacyDocument != null && legacyDocument.Opportunity__c != null) {
 
-    //     System.debug('1');
-        
-    //     Legacy_Document__c legacyDocument = [SELECT Id, Name, Document_Revision__c, FileExtension__c, Opportunity__c FROM Legacy_Document__c WHERE Id = :legacyDocumentId];
+            String contentType = ContentType(legacyDocument.FileExtension__c);
+            
+            HttpRequest req = new HttpRequest();
+            req.setEndpoint('callout:AWS_Lyon/' + legacyDocument.Document_Revision__c);
+            req.setMethod('GET');
+            req.setHeader('Content-Type', contentType);
+            
+            Http http = new Http();
+            HttpResponse res = http.send(req);
+            
+            if (res.getStatusCode() == 200 || res.getStatusCode() == 201) {
+
+                // system.debug('status code ' + res.getStatusCode());
+
+                // System.debug('Encoding ' + EncodingUtil.Base64Encode(res.getBodyAsBlob()));
     
-    //     System.debug('2');
-
-    //     if (legacyDocument != null && legacyDocument.Opportunity__c != null) {
-
-    //         System.debug('3');
-
-    //         String contentType = ContentType(legacyDocument.FileExtension__c);
-            
-    //         HttpRequest req = new HttpRequest();
-    //         req.setEndpoint('callout:AWS_Lyon/' + legacyDocument.Document_Revision__c);
-    //         req.setMethod('GET');
-    //         req.setHeader('Content-Type', contentType);
-            
-    //         Http http = new Http();
-    //         HttpResponse res = http.send(req);
-
-    //         System.debug('req ' + req);
-            
-    //         if (res.getStatusCode() == 200 || res.getStatusCode() == 201) {
-
-    //             System.debug('IN');
-    //             // Crear ContentVersion
-    //             ContentVersion contentVersion = new ContentVersion();
-    //             contentVersion.Title = legacyDocument.Name;
-    //             contentVersion.PathOnClient = legacyDocument.Name;
-    //             contentVersion.VersionData = res.getBodyAsBlob();
-    //             contentVersion.FirstPublishLocationId = legacyDocument.Opportunity__c;
+                // System.debug('NO Encoding ' + res.getBody());
                 
-    //             insert contentVersion;
-                
-    //             // Relacionar el ContentVersion con el ContentDocument
-    //             // ContentDocumentLink contentDocumentLink = new ContentDocumentLink();
-    //             // contentDocumentLink.ContentDocumentId = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :contentVersion.Id].ContentDocumentId;
-    //             // contentDocumentLink.LinkedEntityId = legacyDocument.Opportunity__c;
-    //             // contentDocumentLink.ShareType = 'V';
-    //             // contentDocumentLink.Visibility = 'AllUsers';
-    //             // insert contentDocumentLink;
+                // Integer fileSizeBytes = Integer.valueOf(res.getHeader('Content-Length'));
+                // // Convertir tamaño de bytes a megabytes
+                // Double fileSizeMB = fileSizeBytes / (1024.0 * 1024.0);
+                // System.debug('content size ' + fileSizeMB);
 
-    //             System.debug('OUT ' + contentVersion.Id);
-    //         }
-    //     }
-    // }
+                ContentVersion contentVersion = new ContentVersion();
+                contentVersion.Title = legacyDocument.Name;
+                contentVersion.PathOnClient = legacyDocument.Name;
+                contentVersion.VersionData = res.getBodyAsBlob();
+                contentVersion.FirstPublishLocationId = legacyDocument.Opportunity__c;
+                
+                insert contentVersion;
+            }
+        }
+    }
 }

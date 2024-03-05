@@ -10,4 +10,5 @@
         <target>lightning__HomePage</target>
         <target>lightning__RecordAction</target>
     </targets>
+    
 </LightningComponentBundle>
